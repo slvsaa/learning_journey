@@ -1,6 +1,6 @@
 -- Sesi 3
 
--- select literal
+-- select literal/konstan
 
 select 37;
 
