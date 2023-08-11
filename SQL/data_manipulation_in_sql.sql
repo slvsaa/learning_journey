@@ -424,3 +424,46 @@ SELECT
 FROM home
 INNER JOIN away
 ON home.id = away.id;
+
+-- WINDOWS FUNCTION
+-- OVER
+-- to pass an aggregate function down a data set, similar to subqueries in SELECT
+SELECT 
+	m.id, 
+    c.name AS country, 
+    m.season,
+	m.home_team_goal,
+	m.away_team_goal,
+    -- Use a window to include the aggregate average in each row
+	AVG(m.home_team_goal + m.away_team_goal) OVER() AS overall_avg
+FROM matches AS m
+LEFT JOIN country AS c ON m.country_id = c.id;
+
+-- RANK
+-- ASC
+SELECT 
+	l.name AS league,
+    AVG(m.home_team_goal + m.away_team_goal) AS avg_goals,
+    -- Rank each league according to the average goals
+    RANK() OVER(ORDER BY AVG(m.home_team_goal + m.away_team_goal)) AS league_rank
+FROM league AS l
+LEFT JOIN matches AS m 
+ON l.id = m.country_id
+WHERE m.season = '2011/2012'
+GROUP BY l.name
+-- Order the query by the rank you created
+ORDER BY league_rank;
+
+-- DESC
+SELECT 
+	l.name AS league,
+    AVG(m.home_team_goal + m.away_team_goal) AS avg_goals,
+    -- Rank leagues in descending order by average goals
+    RANK() OVER(ORDER BY AVG(m.home_team_goal + m.away_team_goal) DESC) AS league_rank
+FROM league AS l
+LEFT JOIN matches AS m 
+ON l.id = m.country_id
+WHERE m.season = '2011/2012'
+GROUP BY l.name
+-- Order the query by the rank you created
+ORDER BY league_rank;
