@@ -467,3 +467,107 @@ WHERE m.season = '2011/2012'
 GROUP BY l.name
 -- Order the query by the rank you created
 ORDER BY league_rank;
+
+-- PARTITION BY
+-- allows you to calculate separate "windows" based on columns you want to divide your results
+SELECT
+	date,
+	season,
+	home_team_goal,
+	away_team_goal,
+	CASE WHEN home_team_api_id = 9991 THEN 'home' 
+		 ELSE 'away' END AS warsaw_location,
+    -- Calculate the average goals scored partitioned by season
+    AVG(home_team_goal) OVER(PARTITION BY season) AS season_homeavg,
+    AVG(away_team_goal) OVER(PARTITION BY season) AS season_awayavg
+FROM matches
+WHERE 
+	home_team_api_id = 9991 
+    OR away_team_api_id = 9991
+ORDER BY (home_team_goal + away_team_goal) DESC;
+
+SELECT 
+	date,
+	season,
+	home_team_goal,
+	away_team_goal,
+	CASE WHEN home_team_api_id = 9991 THEN 'home' 
+         ELSE 'away' END AS warsaw_location,
+	-- Calculate average goals partitioned by season and month
+    AVG(home_team_goal) OVER(PARTITION BY season, 
+         	EXTRACT(MONTH FROM date)) AS season_mo_home,
+    AVG(away_team_goal) OVER(PARTITION BY season, 
+            EXTRACT(MONTH FROM date)) AS season_mo_away
+FROM matches
+WHERE 
+	home_team_api_id = 9991 
+    OR away_team_api_id = 9991
+ORDER BY (home_team_goal + away_team_goal) DESC;
+
+-- SLIDING WINDOWS 
+-- to create running calculations between any two points in a window using functions such as PRECEDING, FOLLOWING, and CURRENT ROW
+SELECT 
+	date,
+	home_team_goal,
+	away_team_goal,
+    -- Create a running total and running average of home goals
+    SUM(home_team_goal) OVER(ORDER BY date 
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total,
+    AVG(home_team_goal) OVER(ORDER BY date
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_avg
+FROM matches
+WHERE 
+	home_team_api_id = 9991 
+	AND season = '2011/2012';
+	
+SELECT 
+     date,
+    home_team_goal,
+	away_team_goal,
+    -- Create a running total and running average of home goals
+    -- sorting the data set in reverse order and calculating a backward running total from 
+	-- the CURRENT ROW to the end of the data set (earliest record).
+    SUM(home_team_goal) OVER(ORDER BY date DESC
+         ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS running_total,
+    AVG(away_team_goal) OVER(ORDER BY date DESC
+         ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS running_avg
+FROM matches
+WHERE 
+	away_team_api_id = 9991
+    AND season = '2011/2012';
+    
+   
+-- BRING IT ALL TOGETHER
+
+-- to generate a list of matches in which KAA Gent was defeated during the 2014/2015 English Premier League season.
+-- Set up the home team CTE
+WITH home AS (
+  SELECT m.id, t.team_long_name,
+	  CASE WHEN m.home_team_goal > m.away_team_goal THEN 'KG Win'
+		   WHEN m.home_team_goal < m.away_team_goal THEN 'KG Loss' 
+  		   ELSE 'Tie' END AS outcome
+  FROM matches AS m
+  LEFT JOIN team AS t ON m.home_team_api_id = t.team_api_id),
+-- Set up the away team CTE
+away AS (
+  SELECT m.id, t.team_long_name,
+	  CASE WHEN m.home_team_goal > m.away_team_goal THEN 'KG Loss'
+		   WHEN m.home_team_goal < m.away_team_goal THEN 'KG Win' 
+  		   ELSE 'Tie' END AS outcome
+  FROM matches AS m
+  LEFT JOIN team AS t ON m.away_team_api_id = t.team_api_id)
+-- Select columns and and rank the matches by goal difference
+SELECT DISTINCT
+    date,
+    home.team_long_name AS home_team,
+    away.team_long_name AS away_team,
+    m.home_team_goal,
+    m.away_team_goal,
+    RANK() OVER(ORDER BY ABS(home_team_goal - away_team_goal) DESC) as match_rank
+-- Join the CTEs onto the match table
+FROM matches AS m
+LEFT JOIN home ON m.id = home.id
+LEFT JOIN away ON m.id = away.id
+WHERE m.season = '2014/2015'
+      AND ((home.team_long_name = 'KAA Gent' AND home.outcome = 'KG Loss')
+      OR (away.team_long_name = 'KAA Gent' AND away.outcome = 'KG Loss'));

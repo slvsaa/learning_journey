@@ -1,0 +1,6 @@
+Data Manipulation in SQL
+1. CASE statements
+2. Simple subqueries
+3. Nested and correlated subgueries
+4. Common table expressions
+5. Window functions
