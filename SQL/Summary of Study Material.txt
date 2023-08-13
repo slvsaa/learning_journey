@@ -1,3 +1,22 @@
+Introduction to SQL
+
+Intermediate SQL
+1. Selecting with COUNT () , LIMIT
+2. Filtering with WHERE, BETWEEN, AND, OR, LIKE, NOT LIKE, IN, %, -, IS NULL, IS NOT NULL
+3. ROUND () and aggregate functions
+4. Sorting and grouping with ORDER BY, DESC, GROUP BY , HAVING
+5. Comparison operators
+6. Arithmetic
+
+Joining Data in SQL
+1. INNER JOIN, or just JOIN
+2. Outer join: LEFT JOIN, RIGHT JOIN, FULL JOIN
+3. CROSS JOIN
+4. Semi join / anti join
+5. Self join
+6. Set Operation: Union/Union All, Intersect, Except
+7. Subqueries inside SELECT clauses, WHERE clauses, FROM clauses
+
 Data Manipulation in SQL
 1. CASE statements
 2. Simple subqueries
