@@ -506,6 +506,14 @@ ORDER BY (home_team_goal + away_team_goal) DESC;
 
 -- SLIDING WINDOWS 
 -- to create running calculations between any two points in a window using functions such as PRECEDING, FOLLOWING, and CURRENT ROW
+
+/*
+ROWS or RANGE- specifying rows or range.
+PRECEDING – get rows before the current one.
+FOLLOWING – get rows after the current one.
+UNBOUNDED – when used with PRECEDING or FOLLOWING, it returns all before or after.
+CURRENT ROW
+*/
 SELECT 
 	date,
 	home_team_goal,
