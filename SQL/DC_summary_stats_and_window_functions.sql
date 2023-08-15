@@ -278,3 +278,182 @@ GROUP BY Third
 ORDER BY Third ASC;
 
 --3. Aggregate window functions and frames
+-- SUM in WINDOW FUNCTIONS
+
+--Return the athletes, the number of medals they earned, and the medals running total, ordered by the athletes' names in alphabetical order.
+WITH Athlete_Medals AS (
+  SELECT
+    Athlete, COUNT(*) AS Medals
+  FROM summer
+  WHERE
+    Country = 'USA' AND Medal = 'Gold'
+    AND Years >= 2000
+  GROUP BY Athlete)
+--end cte
+SELECT
+  Athlete,
+  Medals,
+  SUM(Medals) OVER (ORDER BY Athlete ASC) AS Max_Medals
+FROM Athlete_Medals
+ORDER BY Athlete ASC;
+
+--MAX in WINDOW FUNCTIONS
+
+--Return the year, country, medals, and the maximum medals earned so far for each country, ordered by year in ascending order.
+WITH Country_Medals AS (
+  SELECT
+    Years, Country, COUNT(*) AS Medals
+  FROM summer
+  WHERE
+    Country IN ('CHN', 'KOR', 'JPN')
+    AND Medal = 'Gold' AND years >= 2000
+  GROUP BY Years, Country)
+--end cte
+SELECT
+  -- Return the max medals earned so far per country
+  Years,
+  country,
+  Medals,
+  MAX(Medals) OVER (PARTITION BY Country
+                ORDER BY Years ASC) AS Max_Medals
+FROM Country_Medals
+ORDER BY Country ASC, Years ASC;
+
+--MIN in WINDOW FUNCTIONS
+
+--Return the year, medals earned, and minimum medals earned so far.
+WITH France_Medals AS (
+  SELECT
+    Year, COUNT(*) AS Medals
+  FROM Summer_Medals
+  WHERE
+    Country = 'FRA'
+    AND Medal = 'Gold' AND Year >= 2000
+  GROUP BY Year)
+--end cte
+SELECT
+  year,
+  Medals,
+  MIN(Medals) OVER (ORDER BY year ASC) AS Min_Medals
+FROM France_Medals
+ORDER BY Year ASC;
+
+--FRAME
+
+--ROWS
+/*
+ROWS BETWEEN [START] AND [FINISH]
+o n PRECEDING: n rows before the current row
+o CURRENT ROW: the current row
+o n FOLLOWING: n rows after the current ROW
+*/
+
+--Return the year, medals earned, and the maximum medals earned, comparing only the current year and the next year.
+WITH Scandinavian_Medals AS (
+  SELECT
+    Years, COUNT(*) AS Medals
+  FROM summer
+  WHERE
+    Country IN ('DEN', 'NOR', 'FIN', 'SWE', 'ISL')
+    AND Medal = 'Gold'
+  GROUP BY Years)
+--END CTE
+SELECT
+  years,
+  Medals,
+  -- Get the max of the current and next years'  medals
+  MAX(Medals) OVER (ORDER BY years ASC
+             ROWS BETWEEN CURRENT ROW
+             AND 1 FOLLOWING) AS Max_Medals
+FROM Scandinavian_Medals
+ORDER BY Years ASC;
+
+/*
+ * Return the athletes, medals earned, and the maximum medals earned, comparing only the last two and current athletes, 
+ * ordering by athletes' names in alphabetical order.
+ */
+WITH Chinese_Medals AS (
+  SELECT
+    Athlete, COUNT(*) AS Medals
+  FROM summer
+  WHERE
+    Country = 'CHN' AND Medal = 'Gold'
+    AND Years >= 2000
+  GROUP BY Athlete)
+--end cte
+SELECT
+  Athlete,
+  Medals,
+  -- Get the max of the last two and current rows' medals 
+  MAX(Medals) OVER (ORDER BY Athlete ASC
+            ROWS BETWEEN 2 PRECEDING
+            AND CURRENT ROW) AS Max_Medals
+FROM Chinese_Medals
+ORDER BY Athlete ASC;
+
+--Calculate the 3-year moving average of medals earned.
+WITH Russian_Medals AS (
+  SELECT
+    Years, COUNT(*) AS Medals
+  FROM summer
+  WHERE
+    Country = 'RUS'
+    AND Medal = 'Gold'
+    AND Years >= 1980
+  GROUP BY Years)
+--END CTE
+SELECT
+  Years, Medals,
+  --- Calculate the 3-year moving average of medals earned
+  AVG(Medals) OVER
+    (ORDER BY Years ASC
+     ROWS BETWEEN
+     2 PRECEDING AND CURRENT ROW) AS Medals_MA
+FROM Russian_Medals
+ORDER BY Years ASC;
+
+--Calculate the 3-year moving sum of medals earned per country.
+WITH Country_Medals AS (
+  SELECT
+    Years, Country, COUNT(*) AS Medals
+  FROM summer
+  GROUP BY Years, Country)
+--end cte
+SELECT
+  Years, Country, Medals,
+  -- Calculate each country's 3-game moving total
+  SUM(Medals) OVER
+    (PARTITION BY country
+     ORDER BY Years ASC
+     ROWS BETWEEN
+     2 PRECEDING AND CURRENT ROW) AS Medals_MA
+FROM Country_Medals
+ORDER BY Country ASC, Years ASC;
+
+--RANGE 
+--treats duplicates in OVER 'S ORDER BY subclause as a single entity
+
+--4. Beyond window functions
+--Pivoting
+-- Create the correct extension to enable CROSSTAB
+
+/*
+Create the correct extension.
+Fill in the column names of the pivoted table.
+*/
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+SELECT * FROM CROSSTAB($$
+  SELECT
+    Gender, Years, Country
+  FROM summer
+  WHERE
+    Years IN (2008, 2012)
+    AND Medal = 'Gold'
+    AND Events = 'Pole Vault'
+  ORDER By Gender ASC, Years ASC;
+-- Fill in the correct column names for the pivoted table
+$$) AS ct (Gender VARCHAR,
+           "2008" VARCHAR,
+           "2012" VARCHAR)
+ORDER BY Gender ASC;
+
