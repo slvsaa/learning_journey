@@ -23,3 +23,20 @@ Data Manipulation in SQL
 3. Nested and correlated subgueries
 4. Common table expressions
 5. Window functions
+
+Summary Stats and Window Functions
+1. Introduction to window functions
+ - ROW_NUMBER()
+ - LAG(column, n)
+ - PARTITION BY 
+2. Fetching, ranking, and paging
+ - LEAD(column, n)
+ - FIRST_VALUE(column)
+ - LAST_VALUE (column)
+ - RANK ()
+ - DENSE_RANK()
+ - NTILE(n)
+3. Aggregate window functions and frames
+ Sum, Max, Min, ROWS, RANGE
+4. Beyond window functions
+Pivoting, ROLLUP(column), CUBE, COALESCE(), STRING_AGG(column, separator)

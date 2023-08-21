@@ -457,3 +457,120 @@ $$) AS ct (Gender VARCHAR,
            "2012" VARCHAR)
 ORDER BY Gender ASC;
 
+--count the gold medals each country has earned, produce the ranks of each country by medals earned, then pivot the table to this shape.
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+SELECT * FROM CROSSTAB($$
+  WITH Country_Awards AS (
+    SELECT
+      Country,
+      Years,
+      COUNT(*) AS Awards
+    FROM summer
+    WHERE
+      Country IN ('FRA', 'GBR', 'GER')
+      AND Years IN (2004, 2008, 2012)
+      AND Medal = 'Gold'
+    GROUP BY Country, Years)
+--	end cte
+  SELECT
+    Country,
+    Years,
+    RANK() OVER
+      (PARTITION BY Years
+       ORDER BY Awards DESC) :: INTEGER AS rank
+  FROM Country_Awards
+  ORDER BY Country ASC, Years ASC;
+-- Fill in the correct column names for the pivoted table
+$$) AS ct (Country VARCHAR,
+           "2004" INTEGER,
+           "2008" INTEGER,
+           "2012" INTEGER)
+Order by Country ASC;
+
+--ROLLUP(column)
+--a GROUP BY subclause that includes extra rows for group-level aggregations
+/* GROUP BY Country, ROLLUP (Medal) will count all Country - and Medal -level totals, then
+count only Country -level totals and fill in Medal with nulls for these ROWS */
+
+/*
+You're also interested in Country-level subtotals to get the total medals earned for each country, 
+but Gender-level subtotals don't make much sense in this case, so disregard them. 
+*/
+-- Count the gold medals per country and gender
+SELECT
+  Country,
+  Gender,
+  COUNT(*) AS Gold_Awards
+FROM summer
+WHERE
+  Years = 2004
+  AND Medal = 'Gold'
+  AND Country IN ('DEN', 'NOR', 'SWE')
+-- Generate Country-level subtotals
+GROUP BY Country, ROLLUP(Gender)
+ORDER BY Country ASC, Gender ASC;
+
+--CUBE 
+/* 
+• CUBE is a non-hierarchical ROLLUP
+• It generates all possible group-level aggregations
+• CUBE (Country, Medal) counts Country -level, Medal -level, and grand totals
+ */
+
+/*
+Generate a breakdown of the medals awarded to Russia per country and medal type, 
+including all group-level subtotals and a grand total.
+*/
+-- Count the medals per gender and medal type
+SELECT
+  Gender,
+  Medal,
+  COUNT(*) AS Awards
+FROM summer
+WHERE
+  Years = 2012
+  AND Country = 'RUS'
+-- Get all possible group-level subtotals
+GROUP BY CUBE(Gender, Medal)
+ORDER BY Gender ASC, Medal ASC;
+
+--COALESCE()
+--takes a list of values and returns the first non- null value, going from left to right
+
+--Turn the nulls in the Country column to All countries, and the nulls in the Gender column to All genders.
+SELECT
+  -- Replace the nulls in the columns with meaningful text
+  COALESCE(Country, 'All countries') AS Country,
+  COALESCE(Gender, 'All genders') AS Gender,
+  COUNT(*) AS Awards
+FROM summer s 
+WHERE
+  Years = 2004
+  AND Medal = 'Gold'
+  AND Country IN ('DEN', 'NOR', 'SWE')
+GROUP BY ROLLUP(Country, Gender)
+ORDER BY Country ASC, Gender ASC;
+
+--STRING_AGG(column, separator)
+--takes all the values of a column and concatenates them, with separator in between each value
+
+--Return the top 3 countries by medals awarded as one comma-separated string.
+WITH Country_Medals AS (
+  SELECT
+    Country,
+    COUNT(*) AS Medals
+  FROM summer
+  WHERE Years = 2000
+    AND Medal = 'Gold'
+  GROUP BY Country),
+Country_Ranks AS (
+  SELECT
+    Country,
+    RANK() OVER (ORDER BY Medals DESC) AS Rank
+  FROM Country_Medals
+  ORDER BY Rank ASC)
+-- Compress the countries column
+SELECT STRING_AGG(Country, ', ')
+FROM Country_Ranks
+-- Select only the top three ranks
+WHERE Rank <= 3;
