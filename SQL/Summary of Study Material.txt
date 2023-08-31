@@ -40,3 +40,13 @@ Summary Stats and Window Functions
  Sum, Max, Min, ROWS, RANGE
 4. Beyond window functions
 Pivoting, ROLLUP(column), CUBE, COALESCE(), STRING_AGG(column, separator)
+
+Functions for Manipulating Data in PostgreSQL
+1. Common data types in PostgreSQL (INFORMATION_SCHEMA, Interval, Array, )
+2. Date/time functions and operators 
+	AGE(), NOW(), CURRENT_TIMESTAMP, CURRENT_DATE, CURRENT_TIME, CAST(), EXTRACT(), DATE_TRUNC
+3. Parsing and manipulating text
+	CONCATE(), UPPER, LOWER, INITCAP, REPLACE, CHAR_LENGTH(), LENGTH(), LEFT, RIGHT, SUBSTRING(), POSITION()
+	LPAD(), RPAD(), TRIM(), LTRIM(), RTRIM(), REVERSE()
+4. PostgreSQL full-text search, user-defined data types, USER-DEFINED FUNCTIONS, and Extensions 
+	TSVECTOR, TSQUERY, ENUM, how to use extension (pg_trgm and fuzzystrmatch)
